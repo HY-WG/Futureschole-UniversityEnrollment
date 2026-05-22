@@ -342,12 +342,12 @@ CANCELLED 제외 → 취소 후 재신청 가능
 | 6 | confirm과 cancel 동시 발생 (같은 강의) | `confirmedCount`가 DB 집계와 일치, 음수·초과 없음 |
 | 7 | 다수 동시 취소 + 대기열 | 승격 인원이 취소 인원 초과 안 함 |
 | 8 | 승격 대상자(WAITING 1순위)가 동시에 직접 취소 | 데드락 없이 처리, count 정합성 유지 |
-| 11 | 1분만 겹치는 강의 2개 동시 확정 | 경계값 겹침도 감지 → 1개만 CONFIRMED |
-| 12 | 강의 close와 학생 confirm 동시 발생 | 강의 반드시 CLOSED, `confirmedCount` DB와 일치 |
-| 14 | 같은 enrollment에 confirm 5회 동시 요청 | 1번만 성공, `confirmedCount == 1` |
-| 15 | 같은 CONFIRMED enrollment에 cancel 5회 동시 요청 | 1번만 성공, `confirmedCount == 0` |
-| 20 | 대기열 10명, 취소 1회 발생 | `appliedAt` 가장 이른 학생만 승격 |
-| 22 | 다른 학생 동시 확정, 한 명은 시간 충돌 | 충돌 없는 학생만 CONFIRMED |
+| 9 | 1분만 겹치는 강의 2개 동시 확정 | 경계값 겹침도 감지 → 1개만 CONFIRMED |
+| 10 | 강의 close와 학생 confirm 동시 발생 | 강의 반드시 CLOSED, `confirmedCount` DB와 일치 |
+| 11 | 같은 enrollment에 confirm 5회 동시 요청 | 1번만 성공, `confirmedCount == 1` |
+| 12 | 같은 CONFIRMED enrollment에 cancel 5회 동시 요청 | 1번만 성공, `confirmedCount == 0` |
+| 13 | 대기열 10명, 취소 1회 발생 | `appliedAt` 가장 이른 학생만 승격 |
+| 14 | 다른 학생 동시 확정, 한 명은 시간 충돌 | 충돌 없는 학생만 CONFIRMED |
 
 ---
 

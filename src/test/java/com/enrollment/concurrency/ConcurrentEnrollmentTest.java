@@ -441,9 +441,9 @@ class ConcurrentEnrollmentTest extends AbstractIntegrationTest {
         assertThat(dbConfirmed).isLessThanOrEqualTo(1);
     }
 
-    // 시나리오 11: 1분 겹치는 강의 동시 확정 → 정확히 1개만 CONFIRMED
+    // 시나리오 9: 1분 겹치는 강의 동시 확정 → 정확히 1개만 CONFIRMED
     @Test
-    @DisplayName("시나리오11: 1분만 겹치는 강의 2개 동시 확정 시 1개만 CONFIRMED")
+    @DisplayName("시나리오9: 1분만 겹치는 강의 2개 동시 확정 시 1개만 CONFIRMED")
     void concurrentConfirm_oneMinuteOverlap_onlyOneConfirmed() throws InterruptedException {
         User student = students.get(0);
 
@@ -493,11 +493,11 @@ class ConcurrentEnrollmentTest extends AbstractIntegrationTest {
         assertThat(confirmed1 + confirmed2).isEqualTo(1);
     }
 
-    // 시나리오 12: 강의 CLOSED 전환과 PENDING 확정이 동시 발생
+    // 시나리오 10: 강의 CLOSED 전환과 PENDING 확정이 동시 발생
     // LectureService.closeLecture() 에 강의 락이 없으므로 실제 race condition 존재
     // 어느 쪽이 이기든 confirmedCount 와 DB 집계가 일치해야 함
     @Test
-    @DisplayName("시나리오12: close와 confirm 동시 발생 시 강의는 반드시 CLOSED, confirmedCount 는 DB와 일치")
+    @DisplayName("시나리오10: close와 confirm 동시 발생 시 강의는 반드시 CLOSED, confirmedCount 는 DB와 일치")
     void concurrentCloseAndConfirm_lectureClosedAndCountConsistent() throws InterruptedException {
         Long lectureId = createAndOpenLecture("close확정동시강의", 5);
         User student = students.get(0);
@@ -537,9 +537,9 @@ class ConcurrentEnrollmentTest extends AbstractIntegrationTest {
         assertThat(dbConfirmed).isLessThanOrEqualTo(5);
     }
 
-    // 시나리오 14: 같은 enrollment 에 confirm 동시 중복 요청 → 1번만 성공, 카운트 중복 증가 없음
+    // 시나리오 11: 같은 enrollment 에 confirm 동시 중복 요청 → 1번만 성공, 카운트 중복 증가 없음
     @Test
-    @DisplayName("시나리오14: 같은 enrollment에 confirm 5회 동시 요청 시 1번만 성공하고 confirmedCount == 1")
+    @DisplayName("시나리오11: 같은 enrollment에 confirm 5회 동시 요청 시 1번만 성공하고 confirmedCount == 1")
     void concurrentConfirmSameEnrollment_onlyOneSucceedsAndCountIsOne() throws InterruptedException {
         Long lectureId = createAndOpenLecture("중복확정강의", 10);
         User student = students.get(0);
@@ -576,9 +576,9 @@ class ConcurrentEnrollmentTest extends AbstractIntegrationTest {
         assertThat(lecture.getConfirmedCount()).isEqualTo(1);
     }
 
-    // 시나리오 15: 같은 CONFIRMED enrollment 에 cancel 동시 중복 요청 → 1번만 성공, 카운트 중복 감소 없음
+    // 시나리오 12: 같은 CONFIRMED enrollment 에 cancel 동시 중복 요청 → 1번만 성공, 카운트 중복 감소 없음
     @Test
-    @DisplayName("시나리오15: 같은 CONFIRMED enrollment에 cancel 5회 동시 요청 시 1번만 성공하고 confirmedCount == 0")
+    @DisplayName("시나리오12: 같은 CONFIRMED enrollment에 cancel 5회 동시 요청 시 1번만 성공하고 confirmedCount == 0")
     void concurrentCancelSameEnrollment_onlyOneSucceedsAndCountIsZero() throws InterruptedException {
         Long lectureId = createAndOpenLecture("중복취소강의", 10);
         User student = students.get(0);
@@ -616,9 +616,9 @@ class ConcurrentEnrollmentTest extends AbstractIntegrationTest {
         assertThat(lecture.getConfirmedCount()).isEqualTo(0);
     }
 
-    // 시나리오 20: 대기열 10명 존재 시 취소 1회 → appliedAt 가장 이른 1명만 승격
+    // 시나리오 13: 대기열 10명 존재 시 취소 1회 → appliedAt 가장 이른 1명만 승격
     @Test
-    @DisplayName("시나리오20: 대기열 10명 중 취소 1회 시 가장 먼저 신청한 1명만 승격")
+    @DisplayName("시나리오13: 대기열 10명 중 취소 1회 시 가장 먼저 신청한 1명만 승격")
     void singleCancel_withWaitlist_onlyEarliestWaitingPromoted() {
         Long lectureId = createAndOpenLecture("대기순서강의", 1);
 
@@ -652,9 +652,9 @@ class ConcurrentEnrollmentTest extends AbstractIntegrationTest {
         }
     }
 
-    // 시나리오 22: 다른 학생이 같은 강의에 동시 확정 — 한 명은 시간 충돌, 한 명은 정상
+    // 시나리오 14: 다른 학생이 같은 강의에 동시 확정 — 한 명은 시간 충돌, 한 명은 정상
     @Test
-    @DisplayName("시나리오22: 동시 확정 시 시간 충돌 학생만 실패하고 정상 학생은 CONFIRMED")
+    @DisplayName("시나리오14: 동시 확정 시 시간 충돌 학생만 실패하고 정상 학생은 CONFIRMED")
     void concurrentConfirm_oneWithScheduleConflict_onlyNonConflictingStudentConfirmed() throws InterruptedException {
         User studentA = students.get(0); // 기존 강의와 시간 충돌 있음
         User studentB = students.get(1); // 충돌 없음
