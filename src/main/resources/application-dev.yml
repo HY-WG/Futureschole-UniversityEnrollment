@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/enrollment
+    username: app
+    password: app
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      connection-timeout: 5000
+      leak-detection-threshold: 10000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc.batch_size: 500          # DataSeeder bulk insert 성능
+        order_inserts: true
+        order_updates: true
+      jakarta.persistence.lock.timeout: 3000
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080

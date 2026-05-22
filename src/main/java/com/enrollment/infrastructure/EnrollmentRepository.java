@@ -102,4 +102,8 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     // 대기열 총 인원 수
     @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.lecture.id = :lectureId AND e.status = 'WAITING'")
     long countWaitingByLectureId(@Param("lectureId") Long lectureId);
+
+    // 동시성 테스트 DB 직접 검증용 — 캐시 없이 CONFIRMED 인원 수 조회
+    @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.lecture.id = :lectureId AND e.status = 'CONFIRMED'")
+    long countConfirmedByLectureId(@Param("lectureId") Long lectureId);
 }

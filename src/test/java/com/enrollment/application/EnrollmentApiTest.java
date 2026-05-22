@@ -237,13 +237,13 @@ class EnrollmentApiTest extends AbstractIntegrationTest {
         return restTemplate.getForObject("/classes/" + lectureId, LectureResponse.class);
     }
 
+    @SuppressWarnings("unchecked")
     private EnrollmentStatus getEnrollmentStatus(Long enrollmentId, Long studentId) {
         ResponseEntity<PageResponse> res = restTemplate.exchange(
             "/me/enrollments?page=0&size=100", HttpMethod.GET,
             requestEntity(studentId, null), PageResponse.class);
-        return res.getBody().content().stream()
+        return (EnrollmentStatus) res.getBody().content().stream()
             .map(e -> EnrollmentStatus.valueOf((String) ((java.util.LinkedHashMap<?, ?>) e).get("status")))
-            .filter(s -> true)
             .findFirst()
             .orElseThrow();
     }
