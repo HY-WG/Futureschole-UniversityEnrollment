@@ -78,4 +78,28 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
         @Param("lectureId") Long lectureId,
         @Param("now") LocalDateTime now
     );
+
+    // 내 신청 목록 — lecture, student JOIN FETCH (N+1 방지)
+    @Query(value = """
+        SELECT e FROM Enrollment e
+        JOIN FETCH e.lecture
+        JOIN FETCH e.student
+        WHERE e.student.id = :studentId
+        """,
+        countQuery = "SELECT COUNT(e) FROM Enrollment e WHERE e.student.id = :studentId")
+    Page<Enrollment> findByStudentIdWithDetails(@Param("studentId") Long studentId, Pageable pageable);
+
+    // 강의별 수강생 목록 — student JOIN FETCH (N+1 방지)
+    @Query(value = """
+        SELECT e FROM Enrollment e
+        JOIN FETCH e.student
+        JOIN FETCH e.lecture
+        WHERE e.lecture.id = :lectureId
+        """,
+        countQuery = "SELECT COUNT(e) FROM Enrollment e WHERE e.lecture.id = :lectureId")
+    Page<Enrollment> findByLectureIdWithDetails(@Param("lectureId") Long lectureId, Pageable pageable);
+
+    // 대기열 총 인원 수
+    @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.lecture.id = :lectureId AND e.status = 'WAITING'")
+    long countWaitingByLectureId(@Param("lectureId") Long lectureId);
 }
