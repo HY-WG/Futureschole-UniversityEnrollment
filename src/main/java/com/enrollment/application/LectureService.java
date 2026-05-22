@@ -65,9 +65,11 @@ public class LectureService {
     }
 
     // 강의 CLOSED 전환 — CLOSED 시 해당 강의의 PENDING/WAITING 수강 신청을 일괄 CANCELLED 처리
+    // Pessimistic Lock 사용: confirm/cancel 과 동시에 실행될 때 version 불일치(OptimisticLockingFailure) 방지
     @Transactional
     public LectureResponse closeLecture(Long lectureId, Long userId) {
-        Lecture lecture = findLectureOrThrow(lectureId);
+        Lecture lecture = lectureRepository.findByIdWithLock(lectureId)
+            .orElseThrow(() -> new ResourceNotFoundException("강의를 찾을 수 없습니다: " + lectureId));
         validateLectureCreator(lecture, userId);
         lecture.close();
         enrollmentRepository.cancelPendingAndWaitingByLectureId(lectureId, LocalDateTime.now());
