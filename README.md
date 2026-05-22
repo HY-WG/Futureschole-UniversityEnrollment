@@ -327,7 +327,7 @@ CANCELLED 제외 → 취소 후 재신청 가능
 |--------------|------|------|
 | `LectureTest`, `LectureScheduleTest`, `EnrollmentTest` | 도메인 단위 | 25개 |
 | `LectureApiTest` | 통합 (강의 API) | 11개 |
-| `EnrollmentApiTest` | 통합 (수강 신청 API) | 9개 |
+| `EnrollmentApiTest` | 통합 (수강 신청 API) | 10개 |
 | `ConcurrentEnrollmentTest` | 동시성 (14 시나리오) | 14개 |
 
 ### 동시성 테스트 시나리오
