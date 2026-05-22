@@ -4,6 +4,7 @@ import com.enrollment.application.exception.ForbiddenException;
 import com.enrollment.application.exception.ResourceNotFoundException;
 import com.enrollment.domain.exception.*;
 import jakarta.persistence.LockTimeoutException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -44,6 +45,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleLockTimeout(LockTimeoutException ex) {
         return ResponseEntity.status(409).body(
             new ErrorResponse("LOCK_TIMEOUT", "요청이 혼잡합니다. 잠시 후 재시도해주세요."));
+    }
+
+    // 409 — DB unique 제약 위반 (애플리케이션 중복 체크를 통과한 동시 요청)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "";
+        if (msg.contains("uq_enrollment_active")) {
+            return ResponseEntity.status(409).body(
+                new ErrorResponse("DUPLICATE_ENROLLMENT", "이미 활성 수강 신청이 존재합니다."));
+        }
+        return ResponseEntity.status(409).body(
+            new ErrorResponse("DATA_INTEGRITY_ERROR", "데이터 무결성 오류가 발생했습니다."));
     }
 
     // 400 — 요청 헤더 누락
