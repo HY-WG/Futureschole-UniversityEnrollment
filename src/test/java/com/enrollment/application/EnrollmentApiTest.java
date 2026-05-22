@@ -63,9 +63,10 @@ class EnrollmentApiTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("정원 초과 강의에 신청하면 201 과 WAITING 상태를 반환한다")
     void enroll_capacityFull_returnsWaiting() {
-        // 정원 1명짜리 강의에 studentA 가 먼저 PENDING
-        enroll(fullLectureId, studentA.getId());
-        // studentB 는 WAITING
+        // studentA: PENDING → CONFIRMED (정원 1명 전부 소진)
+        Long enrollIdA = enroll(fullLectureId, studentA.getId()).getBody().id();
+        confirmEnrollment(enrollIdA, studentA.getId());
+        // studentB: CONFIRMED 정원 초과 → WAITING
         ResponseEntity<EnrollmentResponse> res = enroll(fullLectureId, studentB.getId());
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -175,7 +176,9 @@ class EnrollmentApiTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("대기열 현황 조회 시 totalWaiting 과 내 순번을 반환한다")
     void getWaitlist_returnsPositionInfo() {
-        enroll(fullLectureId, studentA.getId()); // PENDING (정원 1)
+        // studentA: PENDING → CONFIRMED 으로 정원 소진, studentB 는 WAITING 진입
+        Long enrollIdA = enroll(fullLectureId, studentA.getId()).getBody().id();
+        confirmEnrollment(enrollIdA, studentA.getId());
         enroll(fullLectureId, studentB.getId()); // WAITING
 
         ResponseEntity<WaitlistResponse> res = restTemplate.exchange(

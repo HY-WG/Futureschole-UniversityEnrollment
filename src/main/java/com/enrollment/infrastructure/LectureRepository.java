@@ -3,13 +3,11 @@ package com.enrollment.infrastructure;
 import com.enrollment.domain.Lecture;
 import com.enrollment.domain.LectureStatus;
 import jakarta.persistence.LockModeType;
-import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
@@ -17,11 +15,12 @@ import java.util.Optional;
 public interface LectureRepository extends JpaRepository<Lecture, Long> {
 
     // Lecture row 락 — 동시성 제어 락 순서 2단계 (Student 락 획득 후 호출)
-    // creator, schedules 를 함께 fetch 하여 시간 충돌 검사 시 N+1 방지
+    // JOIN FETCH 를 사용하지 않는 단순 쿼리 — JOIN FETCH 와 PESSIMISTIC_WRITE 혼용 시
+    // Hibernate 가 follow-on locking(HHH000444)으로 폴백하여 Optimistic Lock 충돌 발생
+    // schedules/creator 는 트랜잭션 내 lazy load 로 접근 (락 획득 후라 안전)
     // 락 순서 변경 시 데드락 발생 가능 — 절대 바꾸지 말 것
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
-    @Query("SELECT l FROM Lecture l JOIN FETCH l.creator LEFT JOIN FETCH l.schedules WHERE l.id = :id")
+    @Query("SELECT l FROM Lecture l WHERE l.id = :id")
     Optional<Lecture> findByIdWithLock(@Param("id") Long id);
 
     // 상세 조회용 (락 없음) — creator, schedules 포함
