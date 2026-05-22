@@ -321,24 +321,33 @@ CANCELLED 제외 → 취소 후 재신청 가능
 ./gradlew test
 ```
 
-**기대 결과: 51개 전체 통과**
+**기대 결과: 60개 전체 통과**
 
 | 테스트 클래스 | 종류 | 수량 |
 |--------------|------|------|
 | `LectureTest`, `LectureScheduleTest`, `EnrollmentTest` | 도메인 단위 | 25개 |
 | `LectureApiTest` | 통합 (강의 API) | 11개 |
-| `EnrollmentApiTest` | 통합 (수강 신청 API) | 9개 |
-| `ConcurrentEnrollmentTest` | 동시성 (5 시나리오) | 5개 |
+| `EnrollmentApiTest` | 통합 (수강 신청 API) | 10개 |
+| `ConcurrentEnrollmentTest` | 동시성 (14 시나리오) | 14개 |
 
 ### 동시성 테스트 시나리오
 
-| 시나리오 | 내용 | 검증 항목 |
-|---------|------|-----------|
+| # | 내용 | 검증 항목 |
+|---|------|-----------|
 | 1 | 정원 1명, 10명 동시 확정 | `confirmedCount == 1` |
 | 2 | 정원 5명, 10명 동시 확정 | `confirmedCount == 5` |
 | 3 | 동일 학생, 시간 충돌 강의 동시 확정 | 1개만 CONFIRMED |
 | 4 | 동일 학생, 동일 강의 동시 중복 신청 | 활성 신청 1개 (DB unique) |
 | 5 | CONFIRMED 동시 취소 + 대기열 승격 | `confirmedCount ≤ capacity` |
+| 6 | confirm과 cancel 동시 발생 (같은 강의) | `confirmedCount`가 DB 집계와 일치, 음수·초과 없음 |
+| 7 | 다수 동시 취소 + 대기열 | 승격 인원이 취소 인원 초과 안 함 |
+| 8 | 승격 대상자(WAITING 1순위)가 동시에 직접 취소 | 데드락 없이 처리, count 정합성 유지 |
+| 11 | 1분만 겹치는 강의 2개 동시 확정 | 경계값 겹침도 감지 → 1개만 CONFIRMED |
+| 12 | 강의 close와 학생 confirm 동시 발생 | 강의 반드시 CLOSED, `confirmedCount` DB와 일치 |
+| 14 | 같은 enrollment에 confirm 5회 동시 요청 | 1번만 성공, `confirmedCount == 1` |
+| 15 | 같은 CONFIRMED enrollment에 cancel 5회 동시 요청 | 1번만 성공, `confirmedCount == 0` |
+| 20 | 대기열 10명, 취소 1회 발생 | `appliedAt` 가장 이른 학생만 승격 |
+| 22 | 다른 학생 동시 확정, 한 명은 시간 충돌 | 충돌 없는 학생만 CONFIRMED |
 
 ---
 
