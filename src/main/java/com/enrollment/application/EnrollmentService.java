@@ -54,23 +54,24 @@ public class EnrollmentService {
 
     // 수강 신청 — 정원 여유 시 PENDING, 초과 시 WAITING 으로 자동 진입
     // 대기열 진입은 실패가 아닌 정상 흐름 → EnrollmentResult.waitlisted 로 구분
+    // 락 순서: Student 락 → Lecture 락 (confirm/cancel 과 동일 순서 유지)
     @Transactional
     public EnrollmentResult enroll(Long lectureId, Long studentId) {
-        Lecture lecture = lectureRepository.findByIdWithSchedules(lectureId)
-            .orElseThrow(() -> new ResourceNotFoundException("강의를 찾을 수 없습니다: " + lectureId));
-
-        if (!lecture.isOpen()) {
-            throw new LectureNotOpenException("OPEN 상태 강의에만 수강 신청할 수 있습니다.");
-        }
-
-        User student = userRepository.findById(studentId)
-            .orElseThrow(() -> new ResourceNotFoundException("학생을 찾을 수 없습니다: " + studentId));
+        // 1. Student row 락 — 동일 학생의 동시 중복 신청을 직렬화
+        User student = acquireStudentLock(studentId);
 
         if (student.getRole() != UserRole.STUDENT) {
             throw new ForbiddenException("수강 신청은 STUDENT 역할만 가능합니다.");
         }
 
-        // 중복 신청 확인 — DB unique index 가 최종 방어선
+        // 2. Lecture row 락 — isOpen() / hasCapacity() 읽기 일관성 보장 (락 순서: Student 이후)
+        Lecture lecture = acquireLectureLock(lectureId);
+
+        if (!lecture.isOpen()) {
+            throw new LectureNotOpenException("OPEN 상태 강의에만 수강 신청할 수 있습니다.");
+        }
+
+        // Student 락으로 직렬화되므로 이 시점에 중복 없음; DB unique index 는 최후 방어선
         enrollmentRepository.findActiveByStudentAndLecture(studentId, lectureId)
             .ifPresent(e -> { throw new DuplicateEnrollmentException("이미 활성 수강 신청이 존재합니다."); });
 

@@ -4,7 +4,9 @@ import com.enrollment.application.exception.ForbiddenException;
 import com.enrollment.application.exception.ResourceNotFoundException;
 import com.enrollment.domain.exception.*;
 import jakarta.persistence.LockTimeoutException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -40,20 +42,29 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(403).body(new ErrorResponse("FORBIDDEN", ex.getMessage()));
     }
 
-    // 409 — Pessimistic Lock 타임아웃 (3초 초과 시)
-    @ExceptionHandler(LockTimeoutException.class)
-    public ResponseEntity<ErrorResponse> handleLockTimeout(LockTimeoutException ex) {
+    // 409 — Pessimistic Lock 실패
+    // JPA LockTimeoutException 외에 Spring이 변환하는 PessimisticLockingFailureException
+    // (CannotAcquireLockException 포함)도 함께 처리
+    @ExceptionHandler({LockTimeoutException.class, PessimisticLockingFailureException.class})
+    public ResponseEntity<ErrorResponse> handleLockFailure(Exception ex) {
         return ResponseEntity.status(409).body(
             new ErrorResponse("LOCK_TIMEOUT", "요청이 혼잡합니다. 잠시 후 재시도해주세요."));
     }
 
-    // 409 — DB unique 제약 위반 (애플리케이션 중복 체크를 통과한 동시 요청)
+    // 409 — DB unique 제약 위반
+    // cause 체인에서 Hibernate ConstraintViolationException 을 꺼내 constraint name 으로 판별
+    // message 문자열 비교보다 구조적으로 안전
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
-        String msg = ex.getMessage() != null ? ex.getMessage() : "";
-        if (msg.contains("uq_enrollment_active")) {
-            return ResponseEntity.status(409).body(
-                new ErrorResponse("DUPLICATE_ENROLLMENT", "이미 활성 수강 신청이 존재합니다."));
+        Throwable cause = ex.getCause();
+        while (cause != null) {
+            if (cause instanceof ConstraintViolationException cve) {
+                if ("uq_enrollment_active".equals(cve.getConstraintName())) {
+                    return ResponseEntity.status(409).body(
+                        new ErrorResponse("DUPLICATE_ENROLLMENT", "이미 활성 수강 신청이 존재합니다."));
+                }
+            }
+            cause = cause.getCause();
         }
         return ResponseEntity.status(409).body(
             new ErrorResponse("DATA_INTEGRITY_ERROR", "데이터 무결성 오류가 발생했습니다."));
